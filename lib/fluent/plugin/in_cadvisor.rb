@@ -23,7 +23,7 @@ class CadvisorInput < Fluent::Input
 
   config_param :host, :string, :default => 'localhost'
   config_param :port, :string, :default => 8080
-  config_param :api_version, :string, :default => '2.0'
+  config_param :api_version, :string, :default => '1.3'
   config_param :stats_interval, :time, :default => 60 # every minute
   config_param :tag_prefix, :string, :default => "metric"
   config_param :docker_url, :string,  :default => 'unix:///var/run/docker.sock'
