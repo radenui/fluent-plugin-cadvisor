@@ -80,11 +80,15 @@ class CadvisorInput < Fluent::Input
 
   def emit_container_info(obj)
     container_json = obj.json
-    config = container_json['Config']
+    
 
     id   = container_json['Id']
-    name = config['Image']
-    env  = config['Hostname'].split('--')[2] || '' # app--version--env
+    name = container_json['Name']
+    restart_count = container_json['RestartCount']
+    config = container_json['Config']
+    image_name = config['Image']
+    hostname  = config['Hostname']
+    env = hostname.split('--')[2] || '' # app--version--env
 
     response = RestClient.get(@cadvisorEP + "/containers/docker/" + id)
     res = JSON.parse(response.body)
@@ -112,20 +116,27 @@ class CadvisorInput < Fluent::Input
       num_cores = stats['cpu']['usage']['per_cpu_usage'].count
 
       # CPU percentage variables
-      prev           = res['stats'][index + 1];
+      prev           = res['stats'][index - 1];
       raw_usage      = stats['cpu']['usage']['total'] - prev['cpu']['usage']['total']
       interval_in_ns = get_interval(stats['timestamp'], prev['timestamp'])
 
       record = {
-        'id'                 => Digest::SHA1.hexdigest("#{name}#{id}#{timestamp.to_s}"),
+        'id'                 => Digest::SHA1.hexdigest("#{image_name}#{id}#{timestamp.to_s}"),
         'container_id'       => id,
-        'image'              => name,
+        'image'              => image_name,
+        'name'               => name,
+        'hostname'           => hostname,
         'environment'        => env,
+        'restart_count'      => restart_count,
         'memory_current'     => stats['memory']['usage'],
         'memory_limit'       => memory_limit,
         'cpu_usage'          => raw_usage,
         'cpu_usage_pct'      => (((raw_usage / interval_in_ns ) / num_cores ) * 100).round(2),
         'cpu_num_cores'      => num_cores,
+        'cpu_cumulative_total' => stats['cpu']['usage']['total'],
+        'cpu_cumulative_user' => stats['cpu']['usage']['user'],
+        'cpu_cumulative_sys' => stats['cpu']['usage']['system'],
+        'cpu_load_average'   => stats['cpu']['load_average'],
         'network_rx_bytes'   => stats['network']['rx_bytes'],
         'network_rx_packets' => stats['network']['rx_packets'],
         'network_rx_errors'  => stats['network']['rx_errors'],
@@ -145,4 +156,3 @@ class CadvisorInput < Fluent::Input
     @thread.join
   end
 end
-
