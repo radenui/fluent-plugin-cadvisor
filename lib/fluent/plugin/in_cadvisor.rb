@@ -116,7 +116,7 @@ class CadvisorInput < Fluent::Input
       num_cores = stats['cpu']['usage']['per_cpu_usage'].count
 
       # CPU percentage variables
-      prev           = res['stats'][index - 1];
+      prev           = res['stats'][index + 1];
       raw_usage      = stats['cpu']['usage']['total'] - prev['cpu']['usage']['total']
       interval_in_ns = get_interval(stats['timestamp'], prev['timestamp'])
 
